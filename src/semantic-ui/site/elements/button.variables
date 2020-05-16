@@ -1,0 +1,6 @@
+/*******************************
+    User Variable Overrides
+*******************************/
+
+@yellow:rgb(255,230,35);
+@yellowTextColor: @black;
