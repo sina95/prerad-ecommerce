@@ -57,7 +57,7 @@ class LoginForm extends React.Component {
                   fluid
                   icon="user"
                   iconPosition="left"
-                  placeholder="Nutzername"
+                  placeholder="Nutzername oder E-mail"
                 />
                 <Form.Input
                   onChange={this.handleChange}
