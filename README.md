@@ -23,5 +23,3 @@ npm start
 ```json
 npm run build
 ```
-
-Test
