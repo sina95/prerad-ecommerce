@@ -28,6 +28,7 @@ import {
   paymentListURL,
 } from "../constants";
 import { authAxios } from "../utils";
+import { authRefresh } from "../store/actions/auth";
 
 const UPDATE_FORM = "UPDATE_FORM";
 const CREATE_FORM = "CREATE_FORM";
@@ -492,4 +493,10 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default connect(mapStateToProps)(Profile);
+const mapDispatchToProps = (dispatch) => {
+  return {
+    refreshToken: () => dispatch(authRefresh()),
+  };
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Profile);

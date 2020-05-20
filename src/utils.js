@@ -5,7 +5,7 @@ export const authAxios = () => {
   const auth = axios.create({
     baseURL: endpoint,
     headers: {
-      Authorization: `Token ${localStorage.getItem("token")}`,
+      Authorization: `Bearer ${localStorage.getItem("token")}`,
     },
     timeout: 10000,
   });

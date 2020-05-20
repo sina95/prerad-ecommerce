@@ -12,6 +12,7 @@ import OrderSummary from "./containers/OrderSummary";
 import Profile from "./containers/Profile";
 import ProductListFilterResult from "./containers/ProductListFilterResult";
 import Paypal from "./containers/Paypal";
+import PasswordReset from "./containers/PasswordReset";
 import { localhost } from "./constants";
 
 const BaseRouter = () => (
@@ -26,6 +27,7 @@ const BaseRouter = () => (
     {/* <Route path path="/home" component={HomepageLayout} /> */}
     <Route path="/part-filter" component={ProductListFilterResult} />
     <Route path="/paypal" component={Paypal} />
+    <Route path="/password-reset" component={PasswordReset} />
   </Hoc>
 );
 

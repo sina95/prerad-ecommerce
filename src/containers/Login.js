@@ -6,6 +6,7 @@ import {
   Header,
   Message,
   Segment,
+  List,
 } from "semantic-ui-react";
 import { connect } from "react-redux";
 import { NavLink, Redirect } from "react-router-dom";
@@ -45,7 +46,7 @@ class LoginForm extends React.Component {
           <Header as="h2" color="teal" textAlign="center">
             Melde dich in deinem Konto an
           </Header>
-          {error && <p>{this.props.error.message}</p>}
+          {error && <p>{this.props.error[0]}</p>}
 
           <React.Fragment>
             <Form size="large" onSubmit={this.handleSubmit}>
@@ -82,8 +83,31 @@ class LoginForm extends React.Component {
               </Segment>
             </Form>
             <Message>
-              NNeu für uns?{" "}
-              <NavLink to="/signup">Registrieren Sie sich jetzt</NavLink>
+              <List>
+                <List.Item
+                  icon="lock open"
+                  content={
+                    <p>
+                      {" "}
+                      Passwort vergessen?&nbsp;
+                      <NavLink to="/password-reset">
+                        Mit E-Mail zurücksetzen
+                      </NavLink>
+                    </p>
+                  }
+                />
+                <List.Item
+                  icon="signup"
+                  content={
+                    <p>
+                      NNeu für uns?&nbsp;
+                      <NavLink to="/signup">
+                        Registrieren Sie sich jetzt
+                      </NavLink>
+                    </p>
+                  }
+                ></List.Item>
+              </List>
             </Message>
           </React.Fragment>
         </Grid.Column>

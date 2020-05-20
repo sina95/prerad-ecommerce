@@ -19,8 +19,8 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'corsheaders',
-    'rest_auth',
-    'rest_auth.registration',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
     'rest_framework',
     'rest_framework.authtoken',
     'django_filters',
@@ -75,7 +75,8 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
+        'dj_rest_auth.utils.JWTCookieAuthentication',
+        # 'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 }
@@ -85,6 +86,29 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
+REST_USE_JWT = True
+JWT_AUTH_COOKIE = 'token'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
-ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
+ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 20
+ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = '/'
+ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = '/'
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
+
+
+SENDGRID_API_KEY = config('SENDGRID_API_KEY')
+
+
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_HOST_USER = 'apikey'  # this is exactly the value 'apikey'
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = 'Prerad Team <no-reply@prerad.tk>'

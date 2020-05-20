@@ -5,7 +5,7 @@ import {
   Grid,
   Header,
   Message,
-  Segment
+  Segment,
 } from "semantic-ui-react";
 import { connect } from "react-redux";
 import { NavLink, Redirect } from "react-router-dom";
@@ -16,16 +16,16 @@ class RegistrationForm extends React.Component {
     username: "",
     email: "",
     password1: "",
-    password2: ""
+    password2: "",
   };
 
-  handleSubmit = e => {
+  handleSubmit = (e) => {
     e.preventDefault();
     const { username, email, password1, password2 } = this.state;
     this.props.signup(username, email, password1, password2);
   };
 
-  handleChange = e => {
+  handleChange = (e) => {
     this.setState({ [e.target.name]: e.target.value });
   };
 
@@ -45,7 +45,7 @@ class RegistrationForm extends React.Component {
           <Header as="h2" color="teal" textAlign="center">
             Registrieren Sie sich für Ihr Konto
           </Header>
-          {error && <p>{this.props.error.message}</p>}
+          {error && <p>{this.props.error[0]}</p>}
 
           <React.Fragment>
             <Form size="large" onSubmit={this.handleSubmit}>
@@ -101,7 +101,7 @@ class RegistrationForm extends React.Component {
               </Segment>
             </Form>
             <Message>
-            Sie haben bereits ein Konto? <NavLink to="/login">Login</NavLink>
+              Sie haben bereits ein Konto? <NavLink to="/login">Login</NavLink>
             </Message>
           </React.Fragment>
         </Grid.Column>
@@ -110,22 +110,19 @@ class RegistrationForm extends React.Component {
   }
 }
 
-const mapStateToProps = state => {
+const mapStateToProps = (state) => {
   return {
     loading: state.auth.loading,
     error: state.auth.error,
-    token: state.auth.token
+    token: state.auth.token,
   };
 };
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch) => {
   return {
     signup: (username, email, password1, password2) =>
-      dispatch(authSignup(username, email, password1, password2))
+      dispatch(authSignup(username, email, password1, password2)),
   };
 };
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(RegistrationForm);
+export default connect(mapStateToProps, mapDispatchToProps)(RegistrationForm);
