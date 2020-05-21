@@ -47,6 +47,22 @@ const NavBarMobile = ({
       >
         <Menu.Item header>PARTS</Menu.Item>
       </NavLink>
+      {authenticated ? (
+        <React.Fragment>
+          <NavLink to="/profile" activeClassName="underlineCurrentPage">
+            <Menu.Item>
+              Profil <Icon name="male" />
+            </Menu.Item>
+          </NavLink>
+          <Menu.Item header onClick={() => logout()}>
+            Logout <Icon name="log out" />
+          </Menu.Item>
+        </React.Fragment>
+      ) : (
+        <NavLink to="/signup" activeClassName="underlineCurrentPage">
+          <Menu.Item>SIGNUP</Menu.Item>
+        </NavLink>
+      )}
       ))}
     </Sidebar>
     <Sidebar.Pusher
@@ -64,11 +80,6 @@ const NavBarMobile = ({
         {authenticated ? (
           <React.Fragment>
             <Menu.Menu position="right">
-              <NavLink to="/profile" activeClassName="underlineCurrentPage">
-                <Menu.Item>
-                  Profil <Icon name="male" />
-                </Menu.Item>
-              </NavLink>
               <Dropdown
                 icon="cart"
                 loading={loading}
@@ -104,18 +115,12 @@ const NavBarMobile = ({
                   )}
                 </Dropdown.Menu>
               </Dropdown>
-              <Menu.Item header onClick={() => logout()}>
-                Logout <Icon name="log out" />
-              </Menu.Item>
             </Menu.Menu>
           </React.Fragment>
         ) : (
           <Menu.Menu position="right">
             <NavLink to="/login" activeClassName="underlineCurrentPage">
               <Menu.Item>LOGIN</Menu.Item>
-            </NavLink>
-            <NavLink to="/signup" activeClassName="underlineCurrentPage">
-              <Menu.Item>SIGNUP</Menu.Item>
             </NavLink>
           </Menu.Menu>
         )}

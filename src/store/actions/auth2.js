@@ -61,7 +61,7 @@ export const authLogin = (username, password) => {
           : { username: username, password: password }
       )
       .then((res) => {
-        console.log(res.data);
+        console.log(res);
         const token = res.data.access_token;
         const refresh_token = res.data.refresh_token;
         const expirationDate = new Date(new Date().getTime() + 3600 * 1000);
@@ -72,8 +72,7 @@ export const authLogin = (username, password) => {
         dispatch(checkAuthTimeout(3600));
       })
       .catch((err) => {
-        console.log(err.response);
-        dispatch(authFail(err.response.data));
+        dispatch(authFail(err.response.data.non_field_errors));
       });
   };
 };
@@ -89,7 +88,14 @@ export const authSignup = (username, email, password1, password2) => {
         password2: password2,
       })
       .then((res) => {
-        console.log("Test");
+        const token = res.data.access_token;
+        const refresh_token = res.data.refresh_token;
+        const expirationDate = new Date(new Date().getTime() + 3600 * 1000);
+        localStorage.setItem("token", token);
+        localStorage.setItem("refresh_token", refresh_token);
+        localStorage.setItem("expirationDate", expirationDate);
+        dispatch(authSuccess(token));
+        dispatch(checkAuthTimeout(3600));
       })
       .catch((err) => {
         dispatch(authFail(err.response.data.non_field_errors));

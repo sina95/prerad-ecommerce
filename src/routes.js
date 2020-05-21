@@ -13,6 +13,7 @@ import Profile from "./containers/Profile";
 import ProductListFilterResult from "./containers/ProductListFilterResult";
 import Paypal from "./containers/Paypal";
 import PasswordReset from "./containers/PasswordReset";
+import PasswordResetConfirm from "./containers/PasswordResetConfirm";
 import { localhost } from "./constants";
 
 const BaseRouter = () => (
@@ -28,6 +29,10 @@ const BaseRouter = () => (
     <Route path="/part-filter" component={ProductListFilterResult} />
     <Route path="/paypal" component={Paypal} />
     <Route path="/password-reset" component={PasswordReset} />
+    <Route
+      path="/password_reset_confirm/:uID/:token"
+      component={PasswordResetConfirm}
+    />
   </Hoc>
 );
 

@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_filters',
     'drf_multiple_model',
+    # 'rest_framework_custom_exceptions',
     'core'
 ]
 
@@ -52,6 +53,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.request',
+
             ],
         },
     },
@@ -79,28 +82,51 @@ REST_FRAMEWORK = {
         # 'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    # 'EXCEPTION_HANDLER': 'home.utils.custom_exception_handler',
+    # 'EXCEPTION_HANDLER': 'rest_framework_custom_exceptions.exceptions.simple_error_handler',
 }
 
 AUTHENTICATION_BACKENDS = (
     # `allauth` specific authentication methods, such as login by e-mail
+    'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 )
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
 REST_USE_JWT = True
 JWT_AUTH_COOKIE = 'token'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
-ACCOUNT_CONFIRM_EMAIL_ON_GET = True
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 5
-ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 20
+ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400
+# reduces the delays in iexact lookups
+ACCOUNT_PRESERVE_USERNAME_CASING = False
+ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USERNAME_MIN_LENGTH = 5
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
 ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = '/'
 ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = '/'
-ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 
 
 SENDGRID_API_KEY = config('SENDGRID_API_KEY')

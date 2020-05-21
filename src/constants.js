@@ -27,3 +27,4 @@ export const partCategoryFilterListURL = `${endpoint}/part-category-filter/`;
 export const partFilterListURL = `${endpoint}/part-filter/`;
 export const partsFilterListURL = `${endpoint}/parts-filter/`;
 export const itemFilterListURL = `${endpoint}/item-filter-list/`;
+export const passwordResetConfirmURL = `${localhost}/dj-rest-auth/password/reset/confirm/`;
