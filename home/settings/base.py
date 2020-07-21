@@ -1,6 +1,14 @@
 import os
 from decouple import config
+from datetime import timedelta
+from cryptography.hazmat.primitives.serialization import load_pem_private_key, load_pem_public_key
+from cryptography.hazmat.backends import default_backend
 
+with open("private.pem", "rb") as private_in:
+    privatePem = private_in.read()
+
+with open("public.pem", "rb") as public_in:
+    publicPem = public_in.read()
 
 BASE_DIR = os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__))))
@@ -19,10 +27,12 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'corsheaders',
-    'dj_rest_auth',
-    'dj_rest_auth.registration',
     'rest_framework',
     'rest_framework.authtoken',
+
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+    'rest_framework_simplejwt.token_blacklist',
     'django_filters',
     'drf_multiple_model',
     # 'rest_framework_custom_exceptions',
@@ -53,7 +63,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'django.template.context_processors.request',
+                # 'django.template.context_processors.request',
 
             ],
         },
@@ -78,6 +88,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        # 'rest_framework.authentication.BasicAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',
+        # 'rest_framework.authentication.SessionAuthentication',
         'dj_rest_auth.utils.JWTCookieAuthentication',
         # 'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -87,31 +100,18 @@ REST_FRAMEWORK = {
 }
 
 AUTHENTICATION_BACKENDS = (
-    # `allauth` specific authentication methods, such as login by e-mail
+    # Needed to login by username in Django admin, regardless of `allauth`
     'django.contrib.auth.backends.ModelBackend',
+    # Needed to login by username in Django admin, regardless of `allauth`
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
 
 REST_USE_JWT = True
 JWT_AUTH_COOKIE = 'token'
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
+ACCOUNT_ACTIVATION_DAYS = 1
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 3
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
@@ -138,3 +138,37 @@ EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'Prerad Team <no-reply@prerad.tk>'
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=20),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    # 'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+
+    'ALGORITHM': 'RS256',
+    'SIGNING_KEY': load_pem_private_key(privatePem, password=b"sifrajeprerad", backend=default_backend()),
+    'VERIFYING_KEY': load_pem_public_key(publicPem, backend=default_backend()),
+    # 'AUDIENCE': None,
+    # 'ISSUER': None,
+
+    # 'AUTH_HEADER_TYPES': ('Bearer',),
+    # 'USER_ID_FIELD': 'id',
+    # 'USER_ID_CLAIM': 'user_id',
+
+    # 'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    # 'TOKEN_TYPE_CLAIM': 'token_type',
+
+    # 'JTI_CLAIM': 'jti',
+
+    # 'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    # 'SLIDING_TOKEN_LIFETIME': timedelta(minutes=2),
+    # 'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(minutes=2),
+}
+
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_AGE = 12096000
+
+# REST_AUTH_SERIALIZERS = {
+#     'LOGIN_SERIALIZER': 'core.api.serializers.LoginSerializer',
+# }

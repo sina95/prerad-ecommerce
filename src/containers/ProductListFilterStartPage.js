@@ -15,22 +15,28 @@ import {
 import { localhost } from "../constants";
 import { authAxios } from "../utils";
 import { addToCartURL } from "../constants";
-import { fetchCart } from "../store/actions/cart";
+import { fetchCart, addToCart } from "../store/actions/cart";
 import { connect } from "react-redux";
 import { Link } from "react-router-dom";
 
 class ProductListFilterStartPage extends React.Component {
-  handleAddToCart = (slug) => {
+  // handleAddToCart = (slug) => {
+  //   this.setState({ loading: true });
+  //   authAxios()
+  //     .post(addToCartURL, { slug })
+  //     .then((res) => {
+  //       // this.props.refreshCart();
+  //       this.setState({ loading: false });
+  //     })
+  //     .catch((err) => {
+  //       this.setState({ error: err, loading: false });
+  //     });
+  // };
+
+  handleAddToCart = (e, item) => {
+    e.stopPropagation();
     this.setState({ loading: true });
-    authAxios()
-      .post(addToCartURL, { slug })
-      .then((res) => {
-        this.props.refreshCart();
-        this.setState({ loading: false });
-      })
-      .catch((err) => {
-        this.setState({ error: err, loading: false });
-      });
+    this.props.addToCart(item);
   };
 
   render() {
@@ -94,7 +100,7 @@ class ProductListFilterStartPage extends React.Component {
                             <Button.Group fluid>
                               <Button
                                 animated="vertical"
-                                onClick={() => this.handleAddToCart(item.slug)}
+                                onClick={(e) => this.handleAddToCart(e, item)}
                               >
                                 <Button.Content hidden>
                                   Add to cart
@@ -332,7 +338,7 @@ class ProductListFilterStartPage extends React.Component {
                             <Button.Group fluid>
                               <Button
                                 animated="vertical"
-                                onClick={() => this.handleAddToCart(item.slug)}
+                                onClick={(e) => this.handleAddToCart(e, item)}
                               >
                                 <Button.Content hidden>
                                   Add to cart
@@ -374,6 +380,7 @@ class ProductListFilterStartPage extends React.Component {
 const mapDispatchToProps = (dispatch) => {
   return {
     refreshCart: () => dispatch(fetchCart()),
+    addToCart: (item) => dispatch(addToCart(item)),
   };
 };
 

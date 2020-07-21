@@ -2,9 +2,15 @@ from django_countries.serializer_fields import CountryField
 from rest_framework import serializers
 from core.models import (
     Address, Item, Order, OrderItem, Coupon, Variation, ItemVariation,
-    Payment,Make,Model, ModelYear, PartType, PartCategory, Part, Image
+    Payment, Make, Model, ModelYear, PartType, PartCategory, Part, Image
 )
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.utils.module_loading import import_string
+
+
+# Get the UserModel
+UserModel = get_user_model()
 
 
 class StringSerializer(serializers.StringRelatedField):
@@ -198,7 +204,7 @@ class ItemDetailSerializer(serializers.ModelSerializer):
         model = Item
         fields = (
             'id',
-            'part',
+            'name',
             'price',
             'discount_price',
             # 'category',
@@ -213,7 +219,7 @@ class ItemDetailSerializer(serializers.ModelSerializer):
             'image'
             # 'year_from'
         )
-        depth=5
+        depth = 5
 
     # def get_category(self, obj):
     #     return obj.get_category_display()
@@ -226,9 +232,6 @@ class ItemDetailSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         return ItemImageSerializer(obj.item_images.all(), many=True).data
-
-
-
 
     # def get_suitable_years(self, obj):
     #     return ModelYearSerializer(obj.ModelYear_set.all(), many=True).data
@@ -243,14 +246,12 @@ class PartSerializer(serializers.ModelSerializer):
     class Meta:
         model = Part
         fields = (
-        # 'id',
-        'part',
+            # 'id',
+            'name',
         )
 
     # def get_part_category(self, obj):
     #     return PartCategorySerializer(obj.part_category).data
-
-
 
 
 class PartCategorySerializer(serializers.ModelSerializer):
@@ -275,8 +276,7 @@ class PartCategorySerializer(serializers.ModelSerializer):
         )
 
     def get_parts(self, obj):
-        return PartSerializer(obj.part_set.all(),many=True).data
-
+        return PartSerializer(obj.part_set.all(), many=True).data
 
 
 class PartTypeSerializer(serializers.ModelSerializer):
@@ -284,16 +284,14 @@ class PartTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PartType
-        fields=(
+        fields = (
             'id',
             'part_type',
-             'part_category'
-             )
-
+            'part_category'
+        )
 
     def get_part_category(self, obj):
-        return PartCategorySerializer(obj.partcategory_set.all(),many=True).data
-
+        return PartCategorySerializer(obj.partcategory_set.all(), many=True).data
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -322,6 +320,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             'timestamp'
         )
 
+
 class MakeFilterSerializer(serializers.ModelSerializer):
     # part_category = serializers.SerializerMethodField()
     text = serializers.CharField(source='make')
@@ -329,28 +328,30 @@ class MakeFilterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Make
-        fields=(
+        fields = (
             'id',
             'text',
             'parent'
-             )
+        )
 
-    def get_parent(self,obj):
+    def get_parent(self, obj):
         return 1
+
 
 class ModelFilterSerializer(serializers.ModelSerializer):
     # part_category = serializers.SerializerMethodField()
     text = serializers.CharField(source='model')
     parent = serializers.IntegerField(source='make_id')
+
     class Meta:
         model = Model
-        fields=(
+        fields = (
             'id',
             'text',
             'parent'
-             )
+        )
 
-        
+
 class ModelYearFilterSerializer(serializers.ModelSerializer):
     # part_category = serializers.SerializerMethodField()
     text = serializers.CharField(source='year')
@@ -358,29 +359,28 @@ class ModelYearFilterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ModelYear
-        fields=(
+        fields = (
             'id',
             'text',
             'parent'
-             )
-
+        )
 
 
 class PartTypeFilterSerializer(serializers.ModelSerializer):
     # part_category = serializers.SerializerMethodField()
     text = serializers.CharField(source='part_type')
     parent = serializers.SerializerMethodField()
+
     class Meta:
         model = PartType
-        fields=(
+        fields = (
             'id',
             'text',
             'parent'
-             )
+        )
 
     def get_parent(self, obj):
         return 1
-
 
     # def get_part_category(self, obj):
     #     return PartCategorySerializer(obj.partcategory_set.all(),many=True).data
@@ -391,6 +391,7 @@ class PartCategoryFilterSerializer(serializers.ModelSerializer):
     # parent_id = serializers.SerializerMethodField()
     text = serializers.CharField(source='category')
     parent = serializers.IntegerField(source='part_type_id')
+
     class Meta:
         model = PartCategory
         fields = (
@@ -411,16 +412,18 @@ class PartCategoryFilterSerializer(serializers.ModelSerializer):
     # def get_parent_id(self, obj):
     #     return PartTypeFilterSerializer(obj.id).data
 
+
 class PartFilterSerializer(serializers.ModelSerializer):
     # part_category = serializers.SerializerMethodField()
-    text = serializers.CharField(source='part')
-    parent = serializers.IntegerField(source = 'part_category_id')
+    text = serializers.CharField(source='name')
+    parent = serializers.IntegerField(source='part_category_id')
+
     class Meta:
         model = Part
         fields = (
-        'id',
-        'text',
-        'parent'
+            'id',
+            'text',
+            'parent'
         )
 
 
@@ -434,11 +437,11 @@ class ItemImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
         fields = (
-        'id',
-        'image',
-        'item',
-        'priority',
-        # 'photo_url'
+            'id',
+            'image',
+            'item',
+            'priority',
+            # 'photo_url'
         )
 
     # def get_photo_url(self, image):
@@ -446,7 +449,7 @@ class ItemImageSerializer(serializers.ModelSerializer):
     #     photo_url = image.image.url
     #     return request.build_absolute_uri(photo_url)
     # def get_photo_url(self, obj):
-    #     return '%s%s' % (settings.MEDIA_URL, obj.image)  
+    #     return '%s%s' % (settings.MEDIA_URL, obj.image)
     # def get_photo_url(self, obj):
     #     request = self.context['request']
     #     photo_url = obj.image.url
@@ -457,7 +460,7 @@ class ItemImageSerializer(serializers.ModelSerializer):
 
 
 class ItemLastFourSerializer(serializers.ModelSerializer):
-    part = serializers.CharField(source='part.part')
+    name = serializers.CharField(source='name.name')
     image = serializers.SerializerMethodField()
     # year = serializers.SerializerMethodField()
     # url = serializers.HyperlinkedIdentityField(
@@ -469,14 +472,16 @@ class ItemLastFourSerializer(serializers.ModelSerializer):
 #     read_only=True,
 #     view_name='image'
 # )
-    
+
     class Meta:
-        model=Item
+        model = Item
         fields = (
             'id',
-            'part',
+            'name',
             'price',
             'discount_price',
+            'current_quantity',
+
             'label',
             'slug',
             'image',
@@ -496,17 +501,17 @@ class ItemLastFourSerializer(serializers.ModelSerializer):
 class ItemFilterSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
     label = serializers.SerializerMethodField()
-    part_title = serializers.CharField(source='part.part')
-
+    part_title = serializers.CharField(source='name.name')
 
     class Meta:
         model = Item
         fields = (
             'id',
-            'part',
+            'name',
             'part_title',
             'price',
             'discount_price',
+            'current_quantity',
             'model_year',
             'label',
             'slug',
@@ -527,3 +532,38 @@ class ItemFilterSerializer(serializers.ModelSerializer):
         return obj.get_label_display()
 
 
+class UserDetailsSerializer(serializers.ModelSerializer):
+    """
+    User model w/o password
+    """
+    class Meta:
+        model = UserModel
+        fields = ('pk', 'username', 'email', 'first_name', 'last_name')
+        read_only_fields = ('email', )
+
+
+class JWTSerializer(serializers.Serializer):
+    """
+    Serializer for JWT authentication.
+    """
+    access_token = serializers.CharField()
+    refresh_token = serializers.CharField()
+    # user = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        """
+        Required to allow using custom USER_DETAILS_SERIALIZER in
+        JWTSerializer. Defining it here to avoid circular imports
+        """
+        rest_auth_serializers = getattr(settings, 'REST_AUTH_SERIALIZERS', {})
+
+        JWTUserDetailsSerializer = import_string(
+            rest_auth_serializers.get(
+                'USER_DETAILS_SERIALIZER',
+                'core.api.serializers.UserDetailsSerializer',
+            )
+        )
+
+        user_data = JWTUserDetailsSerializer(
+            obj['user'], context=self.context).data
+        return user_data

@@ -16,6 +16,7 @@ import { authAxios } from "../utils";
 import { addToCartURL } from "../constants";
 import { fetchCart } from "../store/actions/cart";
 import { connect } from "react-redux";
+import axios from "axios";
 
 class ProductListFilterResult extends React.Component {
   handleAddToCart = (slug) => {
@@ -23,7 +24,7 @@ class ProductListFilterResult extends React.Component {
     authAxios()
       .post(addToCartURL, { slug })
       .then((res) => {
-        this.props.refreshCart();
+        // this.props.refreshCart();
         this.setState({ loading: false });
       })
       .catch((err) => {

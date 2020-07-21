@@ -28,3 +28,11 @@ export const partFilterListURL = `${endpoint}/part-filter/`;
 export const partsFilterListURL = `${endpoint}/parts-filter/`;
 export const itemFilterListURL = `${endpoint}/item-filter-list/`;
 export const passwordResetConfirmURL = `${localhost}/dj-rest-auth/password/reset/confirm/`;
+export const checkIfQuantityExistURL = `${endpoint}/check-if-quantity-exist/`;
+export const payForOrderURL = `${endpoint}/pay-for-order/`;
+
+export const TOASTR_OPTIONS = {
+  closeButton: true,
+  preventDuplicated: true,
+  positionClass: "toast-bottom-left",
+};

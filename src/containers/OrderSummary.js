@@ -12,6 +12,7 @@ import {
   Message,
   Segment,
   Modal,
+  Step,
 } from "semantic-ui-react";
 import { connect } from "react-redux";
 import { Redirect } from "react-router-dom";
@@ -21,240 +22,310 @@ import {
   orderSummaryURL,
   orderItemDeleteURL,
   orderItemUpdateQuantityURL,
+  checkIfQuantityExistURL,
 } from "../constants";
-import { fetchCart } from "../store/actions/cart";
+import {
+  fetchCart,
+  removeFromCart,
+  emptyCart,
+  subtractQuantity,
+  addQuantity,
+  updateQuantity,
+} from "../store/actions/cart";
+import { setShippingOptions } from "../store/actions/shipping";
+import { setBillingOptions } from "../store/actions/billing";
 import Paypal from "./Paypal";
+import Cart from "./Cart";
+import Shipping from "./Shipping";
+import Billing from "./Billing";
+import Confirmation from "./Confirmation";
+import axios from "axios";
+import toastr from "toastr";
 
 class OrderSummary extends React.Component {
-  state = {
-    data: null,
-    error: null,
-    loading: false,
-    paypal: {
-      paypalModalOpen: false,
-    },
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      step: 1,
+      paymentModalOpen: false,
+      quantityCheckState: [],
+      quantityModalOpen: false,
+    };
 
-  componentDidMount() {
-    this.handleFetchOrder();
+    this.nextStep = this.nextStep.bind(this);
+    this.previousStep = this.previousStep.bind(this);
+    this.submit = this.submit.bind(this);
+    this.handleRemoveItem = this.handleRemoveItem.bind(this);
+    this.showStep = this.showStep.bind(this);
+    this.subtractQuantity = this.subtractQuantity.bind(this);
+    this.addQuantity = this.addQuantity.bind(this);
+    this.updateQuantity = this.updateQuantity.bind(this);
+    this.paymentMethod = this.paymentMethod.bind(this);
+    this.quantityCheck = this.quantityCheck.bind(this);
   }
-  handlePaypalOpen = () => this.setState({ paypalModalOpen: true });
 
-  handlePaypalClose = () => this.setState({ paypalModalOpen: false });
+  handlePaymantOpen = () => this.setState({ paymentModalOpen: true });
 
-  handleFetchOrder = () => {
-    this.setState({ loading: true });
-    authAxios()
-      .get(orderSummaryURL)
-      .then((res) => {
-        this.setState({ data: res.data, loading: false });
-        this.props.refreshCart();
-      })
-      .catch((err) => {
-        if (err.response.status === 404) {
-          this.setState({
-            error: "You currently do not have an order",
-            loading: false,
+  handlePaymantClose = () => this.setState({ paymentModalOpen: false });
+
+  handleQuantityOpen = () => this.setState({ quantityModalOpen: true });
+  handleQuantityClose = () => this.setState({ quantityModalOpen: false });
+
+  nextStep() {
+    if (
+      this.props.billing.data.paymentMethod === "paypal" &&
+      this.state.step === 2
+    )
+      this.setState({ step: this.state.step + 2 });
+    else this.setState({ step: this.state.step + 1 });
+  }
+
+  previousStep() {
+    if (
+      this.props.billing.data.paymentMethod === "paypal" &&
+      this.state.step === 4
+    )
+      this.setState({ step: this.state.step - 2 });
+    else this.setState({ step: this.state.step - 1 });
+  }
+
+  quantityCheck = () => {
+    // e.stopPropagation();
+    this.setState({ quantityCheckState: [] }, () => {
+      authAxios()
+        .post(checkIfQuantityExistURL, this.props.cart)
+        .then((res) => {
+          let quantityCheckState = [];
+          res.data.map((item) => {
+            let cartItem = this.props.cart.find((obj) => obj.id === item.id);
+            let { quantity, name, id } = cartItem;
+            if (quantity > item.current_quantity) {
+              quantityCheckState = [
+                ...quantityCheckState,
+                {
+                  id: id,
+                  current_quantity: item.current_quantity,
+                  message: `Item ${name} id: ${id} is available in quantity: ${item.current_quantity}.`,
+                },
+              ];
+            }
+
+            // console.log(this.props.cart.indexOf({ id: item.id }));
           });
-        } else {
-          this.setState({ error: err, loading: false });
-        }
-      });
-  };
-
-  renderVariations = (orderItem) => {
-    let text = "";
-    orderItem.item_variations.forEach((iv) => {
-      text += `${iv.variation.name}: ${iv.value}, `;
-    });
-    return text;
-  };
-
-  handleFormatData = (itemVariations) => {
-    // convert [{id: 1},{id: 2}] to [1,2] - they're all variations
-    return Object.keys(itemVariations).map((key) => {
-      return itemVariations[key].id;
+          if (quantityCheckState.length > 0) {
+            this.handleQuantityOpen();
+            this.setState({ quantityCheckState });
+          } else if (quantityCheckState.length === 0) {
+            this.handlePaymantOpen();
+          }
+        });
     });
   };
 
-  handleAddToCart = (slug, itemVariations) => {
-    this.setState({ loading: true });
-    const variations = this.handleFormatData(itemVariations);
-    authAxios()
-      .post(addToCartURL, { slug, variations })
-      .then((res) => {
-        this.handleFetchOrder();
-        this.setState({ loading: false });
-      })
-      .catch((err) => {
-        this.setState({ error: err, loading: false });
-      });
-  };
+  submit() {
+    // if (!this.props.auth) {
+    //   toastr.warning("You have to login first to make an order.");
+    //   this.props.history.push("/login");
+    // } else {
+    //   this.props.placeOrder(
+    //     this.props.cart,
+    //     this.props.shipping.data,
+    //     this.props.billing.data
+    //   );
+    //   this.props.history.push("/");
+    // }
+    this.quantityCheck();
+  }
+  paymentMethod() {
+    switch (this.props.billing.data.paymentMethod) {
+      case "paypal":
+        return <Paypal cart={this.props.cart} shipping={this.props.shipping} />;
+    }
+  }
 
-  handleRemoveQuantityFromCart = (slug) => {
-    authAxios()
-      .post(orderItemUpdateQuantityURL, { slug })
-      .then((res) => {
-        this.handleFetchOrder();
-      })
-      .catch((err) => {
-        this.setState({ error: err });
-      });
-  };
+  handleRemoveItem(e, item) {
+    e.stopPropagation();
+    this.props.removeFromCart(item.id);
+  }
+  subtractQuantity(e, item) {
+    e.stopPropagation();
+    this.props.subtractQuantity(item.id);
+  }
+  addQuantity(e, item) {
+    e.stopPropagation();
+    this.props.addQuantity(item.id);
+  }
+  updateQuantity(e, item) {
+    e.stopPropagation();
+    this.props.updateQuantity(item.id, item.quantity);
+  }
 
-  handleRemoveItem = (itemID) => {
-    authAxios()
-      .delete(orderItemDeleteURL(itemID))
-      .then((res) => {
-        this.handleFetchOrder();
-      })
-      .catch((err) => {
-        this.setState({ error: err });
-      });
-  };
+  showStep() {
+    switch (this.state.step) {
+      case 1:
+        return (
+          <Cart
+            cart={this.props.cart}
+            nextStep={this.nextStep}
+            handleRemoveItem={this.handleRemoveItem}
+            addQuantity={this.addQuantity}
+            subtractQuantity={this.subtractQuantity}
+            clearCart={this.props.emptyCart}
+            updateQuantity={this.updateQuantity}
+            quantityCheck={this.quantityCheck}
+            quantityCheckState={this.state.quantityCheckState}
+          />
+        );
+      case 2:
+        return (
+          <Billing
+            billing={this.props.billing}
+            nextStep={this.nextStep}
+            previousStep={this.previousStep}
+            setBillingOptions={this.props.setBillingOptions}
+          />
+        );
+
+      case 3:
+        return (
+          <Shipping
+            billing={this.props.billing}
+            shipping={this.props.shipping}
+            nextStep={this.nextStep}
+            previousStep={this.previousStep}
+            setShippingOptions={this.props.setShippingOptions}
+          />
+        );
+
+      case 4:
+        return (
+          <Confirmation
+            cart={this.props.cart}
+            shipping={this.props.shipping}
+            billing={this.props.billing}
+            previousStep={this.previousStep}
+            submit={this.submit}
+          />
+        );
+
+      default:
+        return;
+    }
+  }
 
   render() {
-    const { data, error, loading } = this.state;
-    const { isAuthenticated } = this.props;
-    if (!isAuthenticated) {
-      return <Redirect to="/login" />;
-    }
-
     return (
-      <Container>
-        <Header>Order Summary</Header>
-        {error && (
-          <Message
-            error
-            header="There was an error"
-            content={JSON.stringify(error)}
-          />
-        )}
-        {loading && (
-          <Segment>
-            <Dimmer active inverted>
-              <Loader inverted>Loading</Loader>
-            </Dimmer>
+      <div>
+        <Step.Group attached="top">
+          <Step active={this.state.step === 1}>
+            <Icon name="shopping cart" />
+            <Step.Content>
+              <Step.Title>Confirm items</Step.Title>
+            </Step.Content>
+          </Step>
 
-            <Image src="https://react.semantic-ui.com/images/wireframe/short-paragraph.png" />
-          </Segment>
-        )}
-        {data && (
-          <Table celled>
-            <Table.Header>
-              <Table.Row>
-                <Table.HeaderCell>Item #</Table.HeaderCell>
-                <Table.HeaderCell>Item name</Table.HeaderCell>
-                <Table.HeaderCell>Item price</Table.HeaderCell>
-                <Table.HeaderCell>Item quantity</Table.HeaderCell>
-                <Table.HeaderCell>Total item price</Table.HeaderCell>
-              </Table.Row>
-            </Table.Header>
+          <Step active={this.state.step === 2}>
+            <Icon name="payment" />
+            <Step.Content>
+              <Step.Title>Billing</Step.Title>
+              <Step.Description>Enter billing information</Step.Description>
+            </Step.Content>
+          </Step>
 
-            <Table.Body>
-              {data.order_items.map((orderItem, i) => {
-                return (
-                  <Table.Row key={orderItem.id}>
-                    <Table.Cell>{i + 1}</Table.Cell>
-                    <Table.Cell>
-                      {orderItem.item.title} -{" "}
-                      {this.renderVariations(orderItem)}
-                    </Table.Cell>
-                    <Table.Cell>€{orderItem.item.price}</Table.Cell>
-                    <Table.Cell textAlign="center">
-                      <Icon
-                        name="minus"
-                        style={{ float: "left", cursor: "pointer" }}
-                        onClick={() =>
-                          this.handleRemoveQuantityFromCart(orderItem.item.slug)
-                        }
-                      />
-                      {orderItem.quantity}
-                      <Icon
-                        name="plus"
-                        style={{ float: "right", cursor: "pointer" }}
-                        onClick={() =>
-                          this.handleAddToCart(
-                            orderItem.item.slug,
-                            orderItem.item_variations
-                          )
-                        }
-                      />
-                    </Table.Cell>
-                    <Table.Cell>
-                      {orderItem.item.discount_price && (
-                        <Label color="green" ribbon>
-                          ON DISCOUNT
-                        </Label>
-                      )}
-                      €{orderItem.final_price}
-                      <Icon
-                        name="trash"
-                        color="red"
-                        style={{ float: "right", cursor: "pointer" }}
-                        onClick={() => this.handleRemoveItem(orderItem.id)}
-                      />
-                    </Table.Cell>
-                  </Table.Row>
-                );
-              })}
-              <Table.Row>
-                <Table.Cell />
-                <Table.Cell />
-                <Table.Cell />
-                <Table.Cell textAlign="right" colSpan="2">
-                  Order Total: €{data.total}
-                </Table.Cell>
-              </Table.Row>
-            </Table.Body>
+          {this.props.billing.data.paymentMethod === "paypal" ? (
+            ""
+          ) : (
+            <Step active={this.state.step === 3}>
+              <Icon name="truck" />
+              <Step.Content>
+                <Step.Title>Shipping</Step.Title>
+                <Step.Description>
+                  Choose your shipping options
+                </Step.Description>
+              </Step.Content>
+            </Step>
+          )}
 
-            <Table.Footer>
-              <Table.Row>
-                <Table.HeaderCell colSpan="5">
-                  {/* <Link to="/checkout"> */}
-                  <Modal
-                    trigger={
-                      <Button
-                        floated="right"
-                        positive
-                        onClick={this.handlePaypalOpen}
-                      >
-                        Checkout
-                      </Button>
-                    }
-                    open={this.state.paypalModalOpen}
-                    onClose={this.handlePaypalClose}
-                    basic
-                    size="small"
-                  >
-                    {/* <Dimmer active>
+          <Step active={this.state.step === 4}>
+            <Icon name="info circle" />
+            <Step.Content>
+              <Step.Title>Confirm Order</Step.Title>
+              <Step.Description>Verify order details</Step.Description>
+            </Step.Content>
+          </Step>
+        </Step.Group>
+
+        {this.showStep()}
+        <Modal
+          open={this.state.paymentModalOpen}
+          onClose={this.handlePaymantClose}
+          basic
+          size="small"
+        >
+          {/* <Dimmer active>
                       <Loader indeterminate inverted>
                         Preparing...
                       </Loader>
                     </Dimmer> */}
-                    <Modal.Content>
-                      <Paypal data={data} orderTotal={data.total} />
-                    </Modal.Content>
-                  </Modal>
-                  {/* </Link> */}
-                </Table.HeaderCell>
-              </Table.Row>
-            </Table.Footer>
-          </Table>
-        )}
-      </Container>
+          <Modal.Content>{this.paymentMethod()}</Modal.Content>
+        </Modal>
+        <Modal
+          open={this.state.quantityModalOpen}
+          onClose={this.handleQuantityClose}
+          closeIcon
+        >
+          <Header icon="archive" content="Quantity Notation" />
+          <Modal.Content>
+            {this.state.quantityCheckState.map((state) => (
+              <p>{state.message}</p>
+            ))}
+
+            <p>Do you accept change?</p>
+          </Modal.Content>
+          <Modal.Actions>
+            <Button color="red" onClick={this.handleQuantityClose}>
+              <Icon name="remove" /> No
+            </Button>
+            <Button
+              color="green"
+              onClick={(e) =>
+                this.state.quantityCheckState.map((state) => {
+                  this.updateQuantity(e, {
+                    id: state.id,
+                    quantity: state.current_quantity,
+                  });
+                  this.handleQuantityClose();
+                })
+              }
+            >
+              <Icon name="checkmark" /> Yes
+            </Button>
+          </Modal.Actions>
+        </Modal>
+      </div>
     );
   }
 }
 
 const mapStateToProps = (state) => {
   return {
-    isAuthenticated: state.auth.token !== null,
+    cart: state.cart.cart,
+    shipping: state.shipping,
+    billing: state.billing,
+    auth: state.auth.token !== null,
   };
 };
+
 const mapDispatchToProps = (dispatch) => {
   return {
-    refreshCart: () => dispatch(fetchCart()),
+    removeFromCart: (id) => dispatch(removeFromCart(id)),
+    emptyCart: () => dispatch(emptyCart()),
+    setShippingOptions: (data) => dispatch(setShippingOptions(data)),
+    setBillingOptions: (data) => dispatch(setBillingOptions(data)),
+    subtractQuantity: (id) => dispatch(subtractQuantity(id)),
+    addQuantity: (id) => dispatch(addQuantity(id)),
+    updateQuantity: (id, quantity) => dispatch(updateQuantity(id, quantity)),
+    // fetchCart: () => dispatch(fetchCart()),
   };
 };
 

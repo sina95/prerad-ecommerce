@@ -17,7 +17,7 @@ const authStart = (state, action) => {
 
 const authSuccess = (state, action) => {
   return updateObject(state, {
-    token: action.token,
+    token: true,
     error: null,
     loading: false,
   });
@@ -53,8 +53,6 @@ const reducer = (state = initialState, action) => {
       return authFail(state, action);
     case actionTypes.AUTH_LOGOUT:
       return authLogout(state, action);
-    case actionTypes.AUTH_REFRESH:
-      return authStartRefresh(state, action);
 
     default:
       return state;

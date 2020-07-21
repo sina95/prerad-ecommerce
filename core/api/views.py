@@ -15,12 +15,12 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_400_BAD_REQUEST
 from core.models import (
     Item, OrderItem, Order, Address, Payment, Coupon, Refund, UserProfile,
-     Variation, ItemVariation, Make, Model, ModelYear,PartType, PartCategory, Part, Image)
+    Variation, ItemVariation, Make, Model, ModelYear, PartType, PartCategory, Part, Image)
 from .serializers import (
     ItemSerializer, OrderSerializer, ItemDetailSerializer, AddressSerializer,
-    PaymentSerializer, PartSerializer, PartTypeSerializer,MakeFilterSerializer,
+    PaymentSerializer, PartSerializer, PartTypeSerializer, MakeFilterSerializer,
     ModelFilterSerializer, ModelYearFilterSerializer, PartCategoryFilterSerializer,
-    PartTypeFilterSerializer, PartFilterSerializer, ItemLastFourSerializer, ItemImageSerializer, 
+    PartTypeFilterSerializer, PartFilterSerializer, ItemLastFourSerializer, ItemImageSerializer,
     ItemFilterSerializer
 
 )
@@ -337,15 +337,18 @@ class PartCategoryFilterView(ListAPIView):
     serializer_class = PartCategoryFilterSerializer
     queryset = PartCategory.objects.all()
 
+
 class PartTypeFilterView(ListAPIView):
     permission_classes = (AllowAny,)
     serializer_class = PartTypeFilterSerializer
     queryset = PartType.objects.all()
 
+
 class PartFilterView(ListAPIView):
     permission_classes = (AllowAny,)
     serializer_class = PartFilterSerializer
     queryset = Part.objects.all()
+
 
 class ItemImageView(ListAPIView):
     permission_classes = (AllowAny,)
@@ -362,14 +365,22 @@ class ItemImageView(ListAPIView):
 class PartsFiltersView(ObjectMultipleModelAPIView):
     permission_classes = (AllowAny,)
     querylist = [
-        {'queryset': Make.objects.all(), 'serializer_class':MakeFilterSerializer, 'label':'make'},
-        {'queryset': Model.objects.all(), 'serializer_class':ModelFilterSerializer, 'label':'model'},
-        {'queryset': ModelYear.objects.all(), 'serializer_class':ModelYearFilterSerializer, 'label':'model_year'},
-        {'queryset': PartType.objects.all(), 'serializer_class':PartTypeFilterSerializer, 'label':'part_type'},
-        {'queryset': PartCategory.objects.all(), 'serializer_class':PartCategoryFilterSerializer, 'label':'part_category'},
-        {'queryset': Part.objects.all(), 'serializer_class':PartFilterSerializer, 'label':'part'},
-        {'queryset': Item.objects.filter(label='U', published=True).order_by('-id')[:5], 'serializer_class':ItemLastFourSerializer, 'label':'last_four_used'},
-        {'queryset': Item.objects.filter(label='N', published=True).order_by('-id')[:5], 'serializer_class':ItemLastFourSerializer, 'label':'last_four_new'},
+        {'queryset': Make.objects.all(), 'serializer_class': MakeFilterSerializer,
+         'label': 'make'},
+        {'queryset': Model.objects.all(), 'serializer_class': ModelFilterSerializer,
+         'label': 'model'},
+        {'queryset': ModelYear.objects.all(
+        ), 'serializer_class': ModelYearFilterSerializer, 'label': 'model_year'},
+        {'queryset': PartType.objects.all(
+        ), 'serializer_class': PartTypeFilterSerializer, 'label': 'part_type'},
+        {'queryset': PartCategory.objects.all(
+        ), 'serializer_class': PartCategoryFilterSerializer, 'label': 'part_category'},
+        {'queryset': Part.objects.all(), 'serializer_class': PartFilterSerializer,
+         'label': 'name'},
+        {'queryset': Item.objects.filter(label='U', published=True).order_by(
+            '-id')[:5], 'serializer_class':ItemLastFourSerializer, 'label':'last_four_used'},
+        {'queryset': Item.objects.filter(label='N', published=True).order_by(
+            '-id')[:5], 'serializer_class':ItemLastFourSerializer, 'label':'last_four_new'},
     ]
 
     # def get_serializer_context(self):
@@ -377,9 +388,112 @@ class PartsFiltersView(ObjectMultipleModelAPIView):
     #     context.update({"request": self.request})
     #     return context
 
+
 class ItemFilterView(ListAPIView):
     permission_classes = (AllowAny,)
     serializer_class = ItemFilterSerializer
     queryset = Item.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['part', 'model_year']
+    filterset_fields = ['name', 'model_year']
+
+
+class AddToCartSessionView(APIView):
+    def post(self, request, *args, **kwargs):
+        slug = request.data.get('slug', None)
+        variations = request.data.get('variations', [])
+        if slug is None:
+            return Response({"message": "Invalid request"}, status=HTTP_400_BAD_REQUEST)
+
+        item = get_object_or_404(Item, slug=slug)
+
+        minimum_variation_count = Variation.objects.filter(item=item).count()
+        if len(variations) < minimum_variation_count:
+            return Response({"message": "Please specify the required variation types"}, status=HTTP_400_BAD_REQUEST)
+
+        order_item_qs = OrderItem.objects.filter(
+            item=item,
+            user=request.user,
+            ordered=False
+        )
+        for v in variations:
+            order_item_qs = order_item_qs.filter(
+                Q(item_variations__exact=v)
+            )
+
+        if order_item_qs.exists():
+            order_item = order_item_qs.first()
+            order_item.quantity += 1
+            order_item.save()
+        else:
+            order_item = OrderItem.objects.create(
+                item=item,
+                user=request.user,
+                ordered=False
+            )
+            order_item.item_variations.add(*variations)
+            order_item.save()
+
+        order_qs = Order.objects.filter(user=request.user, ordered=False)
+        if order_qs.exists():
+            order = order_qs[0]
+            if not order.items.filter(item__id=order_item.id).exists():
+                order.items.add(order_item)
+                return Response(status=HTTP_200_OK)
+
+        else:
+            ordered_date = timezone.now()
+            order = Order.objects.create(
+                user=request.user, ordered_date=ordered_date)
+            order.items.add(order_item)
+            return Response(status=HTTP_200_OK)
+
+
+class CheckIfQuantityExistView(APIView):
+    def post(self, request, *args, **kwargs):
+        response = []
+        for cart_item in request.data:
+            id = cart_item.get("id", None)
+            quantity = cart_item.get("quantity", None)
+            if id is None:
+                response.append({"id": id, "message": "Invalid ID"})
+                # return Response([{"message": "Invalid request"}], status=HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    item = Item.objects.get(
+                        id=id)
+                    current_quantity = item.current_quantity
+                    if quantity > current_quantity:
+                        status = "Check quantity"
+                    else:
+                        status = "Available"
+                    response.append(
+                        {"id": id, "current_quantity": current_quantity, "status": status})
+                except Item.DoesNotExist:
+                    response.append({"id": id, "message": "Invalid ID"})
+        return Response(response, status=HTTP_200_OK)
+
+
+class PayForOrderView(APIView):
+    def post(self, request, *args, **kwargs):
+        response = []
+        for cart_item in request.data:
+            id = cart_item.get("id", None)
+            quantity = cart_item.get("quantity", None)
+            if id is None:
+                response.append({"id": id, "message": "Invalid ID"})
+                # return Response([{"message": "Invalid request"}], status=HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    item = Item.objects.get(
+                        id=id)
+                    current_quantity = item.current_quantity
+                    if quantity > current_quantity:
+                        status = "Check quantity"
+                    else:
+                        status = "Available"
+
+                    response.append(
+                        {"id": id, "current_quantity": current_quantity, "status": status})
+                except Item.DoesNotExist:
+                    response.append({"id": id, "message": "Invalid ID"})
+        return Response(response, status=HTTP_200_OK)

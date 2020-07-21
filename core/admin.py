@@ -1,5 +1,4 @@
 from django.contrib import admin
-
 from .models import (
     Item, OrderItem, Order, Payment, Coupon, Refund,
     Address, UserProfile, Variation, ItemVariation, PartCategory, Make, Model,
@@ -7,6 +6,8 @@ from .models import (
 )
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.contrib.sessions.models import Session
+
 
 def make_refund_accepted(modeladmin, request, queryset):
     queryset.update(refund_requested=False, refund_granted=True)
@@ -115,9 +116,9 @@ class ImageInLineAdmin(admin.TabularInline):
 
 class ItemAdmin(admin.ModelAdmin):
     inlines = [ImageInLineAdmin]
-    search_fields = ['part']
+    search_fields = ['name']
     list_display = [
-        'part',
+        'name',
         'price',
         'discount_price',
         # 'category',
@@ -126,8 +127,9 @@ class ItemAdmin(admin.ModelAdmin):
 
     ]
     actions = [make_item_published]
-    filter_horizonal=('model_year',)
+    filter_horizonal = ('model_year',)
     # pass
+
 
 class ItemInLineAdmin(admin.TabularInline):
     model = Item
@@ -139,24 +141,24 @@ class ItemInLineAdmin(admin.TabularInline):
 #     # inlines = [ItemInLineAdmin]
 
 
-
 class ModelYearAdminForm(forms.ModelForm):
     items = forms.ModelMultipleChoiceField(
         queryset=Item.objects.all(),
-        required = False,
-        widget = FilteredSelectMultiple(
+        required=False,
+        widget=FilteredSelectMultiple(
             verbose_name=('Items'),
             is_stacked=False
         )
     )
+
     class Meta:
-        model=ModelYear
+        model = ModelYear
         fields = '__all__'
 
-    def __init__(self,*args,**kwargs):
-        super(ModelYearAdminForm, self).__init__(*args,**kwargs)
+    def __init__(self, *args, **kwargs):
+        super(ModelYearAdminForm, self).__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
-            self.fields['items'].initial=self.instance.items.all()
+            self.fields['items'].initial = self.instance.items.all()
 
     def save(self, commit=True):
         model_year = super(ModelYearAdminForm, self).save(commit=False)
@@ -173,11 +175,10 @@ class ModelYearAdminForm(forms.ModelForm):
         #     # Get the existing relatonships
         #     current_model_year_selections = Item.objects.filter(model_year=model_year)
         #     current_selections = [o.item for o in current_model_year_selections]
-            
+
         #     # Get the submitted relationships
         #     submitted_selections = self.cleaned_data['items']
-            
-            
+
         #     # Create new relation in another table if they do not exists
         #     for item in submitted_selections:
         #         if item not in current_selections:
@@ -188,11 +189,19 @@ class ModelYearAdminForm(forms.ModelForm):
 
         return model_year
 
+
 class ModelYearAdmin(admin.ModelAdmin):
     form = ModelYearAdminForm
-    ordering=['model', 'year']
+    ordering = ['model', 'year']
 
     # filter_horizonal=['']
+
+
+class SessionAdmin(admin.ModelAdmin):
+    def _session_data(self, obj):
+        return obj.get_decoded()
+    list_display = ['session_key', '_session_data', 'expire_date']
+    ordering = ['-expire_date']
 
 
 admin.site.register(ItemVariation, ItemVariationAdmin)
@@ -213,3 +222,4 @@ admin.site.register(Image, ImageAdmin)
 admin.site.register(PartType)
 admin.site.register(Part)
 admin.site.register(VehicleForSale)
+admin.site.register(Session, SessionAdmin)

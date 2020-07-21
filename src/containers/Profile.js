@@ -28,7 +28,8 @@ import {
   paymentListURL,
 } from "../constants";
 import { authAxios } from "../utils";
-import { authRefresh } from "../store/actions/auth";
+import axios from "axios";
+// import { authRefresh } from "../store/actions/auth";
 
 const UPDATE_FORM = "UPDATE_FORM";
 const CREATE_FORM = "CREATE_FORM";
@@ -45,7 +46,7 @@ class PaymentHistory extends React.Component {
   handleFetchPayments = () => {
     this.setState({ loading: true });
     authAxios()
-      .get(paymentListURL, { withCredentials: true })
+      .get(paymentListURL)
       .then((res) => {
         this.setState({
           loading: false,
@@ -329,7 +330,7 @@ class Profile extends React.Component {
   };
 
   handleFetchCountries = () => {
-    authAxios()
+    axios
       .get(countryListURL)
       .then((res) => {
         this.setState({ countries: this.handleFormatCountries(res.data) });
@@ -493,10 +494,10 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
-  return {
-    refreshToken: () => dispatch(authRefresh()),
-  };
-};
+// const mapDispatchToProps = (dispatch) => {
+//   return {
+//     // refreshToken: () => dispatch(authRefresh()),
+//   };
+// };
 
-export default connect(mapStateToProps, mapDispatchToProps)(Profile);
+export default connect(mapStateToProps)(Profile);

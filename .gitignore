@@ -8,3 +8,5 @@ media
 package-lock.json
 .env
 db.sqlite3
+private.pem
+public.pem

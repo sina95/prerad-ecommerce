@@ -1,21 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Segment, Loader, Header, Divider, Icon } from "semantic-ui-react";
-import _ from "lodash";
-import { authAxios } from "../utils";
-import { payForOrderURL } from "../constants";
 
 const Paypal = (props) => {
   const [paidFor, setPaidFor] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   let paypalRef = useRef();
-  let totalPrice = 0;
-  let items = _.map(props.cart, (element, index) => {
-    totalPrice += element.price * element.quantity;
-  });
-
   const product = {
-    price: totalPrice,
+    price: props.data.total,
     description: "Motorbike parts",
   };
 
@@ -36,20 +28,15 @@ const Paypal = (props) => {
                   {
                     description: product.description,
                     amount: {
+                      currency_code: "EUR",
                       value: product.price,
-                      // currency_code: "EUR",
-                      // value: product.price,
                     },
                   },
                 ],
-                application_context: {
-                  brand_name: "Prerad",
-                },
               });
             },
             onApprove: async (data, actions) => {
               const order = await actions.order.capture();
-              authAxios().post(payForOrderURL, props.cart);
 
               setPaidFor(true);
               console.log(order);
@@ -70,7 +57,7 @@ const Paypal = (props) => {
       ) : (
         <Segment textAlign="center">
           <Header>
-            {product.description} for €{totalPrice}
+            {product.description} for €{props.orderTotal}
           </Header>
           <Header>Choose your paymant method:</Header>
           <Divider />

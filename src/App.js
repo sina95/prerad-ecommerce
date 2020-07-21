@@ -3,15 +3,15 @@ import { BrowserRouter as Router } from "react-router-dom";
 import { connect } from "react-redux";
 import BaseRouter from "./routes";
 import * as actions from "./store/actions/auth";
+import * as actionsFingerprint from "./store/actions/fingerprint";
 import "semantic-ui-less/semantic.less";
 import CustomLayout from "./containers/Layout";
-// import Navbar from "./containers/Navbar";
 import "./index.css";
-// import "bootstrap/dist/css/bootstrap.min.css";
 
 class App extends Component {
   componentDidMount() {
     this.props.onTryAutoSignup();
+    // this.props.fingerprint();
   }
 
   render() {
@@ -34,6 +34,7 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
   return {
     onTryAutoSignup: () => dispatch(actions.authCheckState()),
+    fingerprint: () => dispatch(actionsFingerprint.fingerprint()),
   };
 };
 

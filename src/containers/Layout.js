@@ -12,6 +12,8 @@ import {
   Icon,
   Sidebar,
   Responsive,
+  Modal,
+  Dimmer,
 } from "semantic-ui-react";
 import { withRouter, NavLink } from "react-router-dom";
 import { connect } from "react-redux";
@@ -83,21 +85,21 @@ const NavBarMobile = ({
               <Dropdown
                 icon="cart"
                 loading={loading}
-                text={`${cart !== null ? cart.order_items.length : 0}`}
+                text={`${cart !== null ? cart.length : 0}`}
                 pointing
                 className="link item"
               >
                 <Dropdown.Menu>
                   {cart !== null ? (
                     <React.Fragment>
-                      {cart.order_items.map((order_item) => {
+                      {cart.map((order_item) => {
                         return (
                           <Dropdown.Item key={order_item.id}>
-                            {order_item.quantity} x {order_item.item.title}
+                            {order_item.quantity} x {order_item.name}
                           </Dropdown.Item>
                         );
                       })}
-                      {cart.order_items.length < 1 ? (
+                      {cart.length < 1 ? (
                         <Dropdown.Item>
                           Keine Artikel in Ihrem Warenkorb
                         </Dropdown.Item>
@@ -158,21 +160,21 @@ const NavBarDesktop = ({
             <Dropdown
               icon="cart"
               loading={loading}
-              text={`${cart !== null ? cart.order_items.length : 0}`}
+              text={`${cart !== null ? cart.length : 0}`}
               pointing
               className="link item"
             >
               <Dropdown.Menu>
                 {cart !== null ? (
                   <React.Fragment>
-                    {cart.order_items.map((order_item) => {
+                    {cart.map((order_item) => {
                       return (
                         <Dropdown.Item key={order_item.id}>
-                          {order_item.quantity} x {order_item.item.title}
+                          {order_item.quantity} x {order_item.name}
                         </Dropdown.Item>
                       );
                     })}
-                    {cart.order_items.length < 1 ? (
+                    {cart.length < 1 ? (
                       <Dropdown.Item>
                         Keine Artikel in Ihrem Warenkorb
                       </Dropdown.Item>
@@ -200,21 +202,22 @@ const NavBarDesktop = ({
           <Dropdown
             icon="cart"
             loading={loading}
-            text={`${cart !== null ? cart.order_items.length : 0}`}
+            text={`${cart !== null ? cart.length : 0}`}
             pointing
             className="link item"
           >
             <Dropdown.Menu>
               {cart !== null ? (
                 <React.Fragment>
-                  {cart.order_items.map((order_item) => {
-                    return (
-                      <Dropdown.Item key={order_item.id}>
-                        {order_item.quantity} x {order_item.item.title}
-                      </Dropdown.Item>
-                    );
-                  })}
-                  {cart.order_items.length < 1 ? (
+                  {cart &&
+                    cart.map((order_item) => {
+                      return (
+                        <Dropdown.Item key={order_item.id}>
+                          {order_item.quantity} x {order_item.name}
+                        </Dropdown.Item>
+                      );
+                    })}
+                  {cart.length < 1 ? (
                     <Dropdown.Item>
                       Keine Artikel in Ihrem Warenkorb
                     </Dropdown.Item>
@@ -250,9 +253,9 @@ const NavBarChildren = ({ children }) => (
 );
 
 class CustomLayout extends React.Component {
-  componentDidMount() {
-    this.props.fetchCart();
-  }
+  // componentDidMount() {
+  //   this.props.fetchCart();
+  // }
 
   state = {
     visible: false,
@@ -297,6 +300,36 @@ class CustomLayout extends React.Component {
             history={history}
             logout={this.props.logout}
           />
+          {
+            // <Modal basic open={true}>
+            //   {/* <Loader className="test">Ucitavanje</Loader> */}
+            //   <Modal.Content>
+            //     {/* <div id="cssload-wrapper"> */}
+            //     <Dimmer>
+            //       <div className="cssload-loader">
+            //         <div className="cssload-line"></div>
+            //         <div className="cssload-line"></div>
+            //         <div className="cssload-line"></div>
+            //         <div className="cssload-line"></div>
+            //         <div className="cssload-line"></div>
+            //         <div className="cssload-line"></div>
+            //         <div className="cssload-subline"></div>
+            //         <div className="cssload-subline"></div>
+            //         <div className="cssload-subline"></div>
+            //         <div className="cssload-subline"></div>
+            //         <div className="cssload-subline"></div>
+            //         <div className="cssload-loader-circle-1">
+            //           <div className="cssload-loader-circle-2"></div>
+            //         </div>
+            //         <div className="cssload-needle"></div>
+            //         <div className="cssload-loading">loading</div>
+            //       </div>
+            //       {/* </div> */}
+            //     </Dimmer>
+            //   </Modal.Content>
+            // </Modal>
+          }
+
           <NavBarChildren>{this.props.children}</NavBarChildren>
         </Responsive>
 
@@ -330,7 +363,7 @@ class CustomLayout extends React.Component {
 const mapStateToProps = (state) => {
   return {
     authenticated: state.auth.token !== null,
-    cart: state.cart.shoppingCart,
+    cart: state.cart.cart,
     loading: state.cart.loading,
   };
 };
@@ -338,7 +371,7 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
   return {
     logout: () => dispatch(logout()),
-    fetchCart: () => dispatch(fetchCart()),
+    // fetchCart: () => dispatch(fetchCart()),
   };
 };
 

@@ -20,7 +20,7 @@ import {
   Divider,
 } from "semantic-ui-react";
 import { productDetailURL, addToCartURL, localhost } from "../constants";
-import { fetchCart } from "../store/actions/cart";
+import { fetchCart, addToCart } from "../store/actions/cart";
 import { authAxios } from "../utils";
 import ImageZoom from "./ImageZoom";
 import { Carousel } from "react-responsive-carousel";
@@ -87,21 +87,25 @@ class ProductDetail extends React.Component {
     });
   };
 
-  handleAddToCart = (slug) => {
-    this.setState({ loading: true });
-    const { formData } = this.state;
-    const variations = this.handleFormatData(formData);
-    authAxios()
-      .post(addToCartURL, { slug, variations })
-      .then((res) => {
-        this.props.refreshCart();
-        this.setState({ loading: false });
-      })
-      .catch((err) => {
-        this.setState({ error: err, loading: false });
-      });
-  };
+  // handleAddToCart = (slug) => {
+  //   this.setState({ loading: true });
+  //   const { formData } = this.state;
+  //   const variations = this.handleFormatData(formData);
+  //   authAxios()
+  //     .post(addToCartURL, { slug, variations })
+  //     .then((res) => {
+  //       this.props.refreshCart();
+  //       this.setState({ loading: false });
+  //     })
+  //     .catch((err) => {
+  //       this.setState({ error: err, loading: false });
+  //     });
+  // };
 
+  handleAddToCart = (e, item) => {
+    e.stopPropagation();
+    this.props.addToCart(item);
+  };
   handleChange = (e, { name, value }) => {
     const { formData } = this.state;
     const updatedFormData = {
@@ -209,7 +213,7 @@ class ProductDetail extends React.Component {
                           {/* <Label as="a" color="red" corner="left" icon="zoom" /> */}
                           {/* <p className="legend">Click on image for zoom view</p> */}
                           <img
-                            alt={data.part.part}
+                            alt={data.name.name}
                             src={localhost + value.image}
                             key={index}
                           />
@@ -269,7 +273,7 @@ class ProductDetail extends React.Component {
                     <Button
                       size="big"
                       positive
-                      onClick={() => this.handleAddToCart(item.slug)}
+                      onClick={(e) => this.handleAddToCart(e, item)}
                     >
                       <Icon name="shopping cart" />
                       Add to cart
@@ -417,6 +421,7 @@ class ProductDetail extends React.Component {
 const mapDispatchToProps = (dispatch) => {
   return {
     refreshCart: () => dispatch(fetchCart()),
+    addToCart: (id) => dispatch(addToCart(id)),
   };
 };
 

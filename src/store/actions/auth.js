@@ -1,55 +1,129 @@
 import axios from "axios";
+import toastr from "toastr";
 import * as actionTypes from "./actionTypes";
-import { localhost } from "../../constants.js";
+import { localhost, TOASTR_OPTIONS } from "../../constants.js";
+import jwtDecode from "jwt-decode";
+import { authAxios } from "../../utils";
 
-export const authStart = () => {
+toastr.options = TOASTR_OPTIONS;
+
+export const authStart = (username) => {
   return {
     type: actionTypes.AUTH_START,
+    payload: username,
   };
 };
 
-export const authSuccess = (token) => {
+export const authSuccess = () => {
   return {
     type: actionTypes.AUTH_SUCCESS,
-    token: token,
   };
 };
 
 export const authFail = (error) => {
   return {
     type: actionTypes.AUTH_FAIL,
-    error: error,
+    payload: error,
   };
 };
 
-export const authStartRefresh = () => {
-  return {
-    type: actionTypes.AUTH_REFRESH,
-  };
+export const setAuthorizationToken = (token) => {
+  if (token) {
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  } else {
+    delete axios.defaults.headers.common["Authorization"];
+  }
 };
 
 export const logout = () => {
   localStorage.removeItem("token");
-  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("jwtToken");
+  localStorage.removeItem("jwtRefreshToken");
   localStorage.removeItem("expirationDate");
+  localStorage.removeItem("refreshExpirationDate");
+  // setAuthorizationToken(false);
+
   return {
     type: actionTypes.AUTH_LOGOUT,
   };
 };
 
-export const checkAuthTimeout = (expirationTime) => {
+export const renewAuthorizationToken = () => {
   return (dispatch) => {
-    setTimeout(() => {
-      dispatch(logout());
+    const expirationDate = new Date(localStorage.getItem("expirationDate"));
+    const refreshExpirationDate = new Date(
+      localStorage.getItem("refreshExpirationDate")
+    );
+    const expirationTime = (expirationDate - new Date()) / 1000 - 30;
+    console.log(expirationTime);
+
+    setInterval(() => {
+      const refresh = localStorage.getItem("jwtRefreshToken");
+      axios
+        .post(`${localhost}/dj-rest-auth/token/refresh/`, { refresh })
+        .then((res) => {
+          const token = res.data.access;
+          const expirationDate = new Date(jwtDecode(token).exp * 1000);
+          // localStorage.removeItem("jwtToken");
+          // localStorage.removeItem("expirationDate");
+          localStorage.setItem("jwtToken", token);
+          localStorage.setItem("expirationDate", expirationDate);
+          setAuthorizationToken(token + "ii");
+          console.log(token);
+        });
     }, expirationTime * 1000);
   };
 };
 
+export const checkAuthTimeout = (expirationTime) => {
+  return (dispatch) => {
+    console.log(expirationTime);
+    setTimeout(() => {
+      dispatch(logout());
+      console.log("timeout");
+    }, expirationTime * 1000);
+  };
+};
+
+// export const refreshTokenTimeout = (refresh) => {
+//   return (dispatch) => {
+//     const expirationDate = new Date(localStorage.getItem("expirationDate"));
+//     const refreshExpirationDate = new Date(
+//       localStorage.getItem("refreshExpirationDate")
+//     );
+//     const expirationTime = (expirationDate - new Date()) / 1000 - 290;
+//     // const refresh = localStorage.getItem("jwtRefreshToken");
+//     renewAuthorizationToken(refresh);
+//     // console.log(expirationTime);
+//     setInterval(() => {
+//       const refresh = localStorage.getItem("jwtRefreshToken");
+//       // console.log(refresh);
+//       renewAuthorizationToken(refresh);
+//       console.log("pass");
+//       // dispatch(logout());
+//     }, expirationTime * 1000);
+//   };
+// };
+
+function doesHttpOnlyCookieExist(cookiename) {
+  var d = new Date();
+  d.setTime(d.getTime() + 1000);
+  var expires = "expires=" + d.toUTCString();
+
+  document.cookie =
+    "name=" + cookiename + ";domain=127.0.0.1:8000;path=/;" + expires;
+  if (document.cookie.indexOf(cookiename + "=") == -1) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 export const authLogin = (username, password) => {
   const expression = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
   return (dispatch) => {
-    dispatch(authStart());
-    axios
+    dispatch(authStart(username));
+    authAxios()
       .post(
         `${localhost}/dj-rest-auth/login/`,
         expression.test(username)
@@ -61,19 +135,49 @@ export const authLogin = (username, password) => {
           : { username: username, password: password }
       )
       .then((res) => {
-        console.log(res.data);
-        const token = res.data.access_token;
-        const refresh_token = res.data.refresh_token;
-        const expirationDate = new Date(new Date().getTime() + 3600 * 1000);
-        localStorage.setItem("token", token);
-        localStorage.setItem("refresh_token", refresh_token);
-        localStorage.setItem("expirationDate", expirationDate);
-        dispatch(authSuccess(token));
-        dispatch(checkAuthTimeout(3600));
+        dispatch(authSuccess());
+        toastr.success(`Logged in as <b>${username}</b>.`);
+        localStorage.setItem("token", "yes");
+        // dispatch(renewAuthorizationToken());
+        // dispatch(checkAuthTimeout((expirationDate - new Date()) / 1000 - 290));
       })
       .catch((err) => {
-        console.log(err.response);
+        dispatch(authFail(err.response));
+        if (
+          err.response.status === 400 &&
+          err.response.data.non_field_errors[0] ===
+            "Unable to log in with provided credentials."
+        ) {
+          toastr.error("Log in failed, please check your credentials again.");
+        }
         dispatch(authFail(err.response.data));
+      });
+  };
+};
+
+// export const logout = () => {
+//   return (dispatch) => {
+//     localStorage.removeItem("jwtToken");
+//     setAuthorizationToken(false);
+//     dispatch(authSuccess({}));
+//   };
+// };
+
+export const checkAuthorizationToken = (token) => {
+  return (dispatch) => {
+    axios
+      .post(`${localhost}/dj-rest-auth/token/verify/`, { token })
+      .then((res) => {
+        dispatch(renewAuthorizationToken(res.data.token));
+      })
+      .catch((err) => {
+        if (
+          err.response.status === 400 &&
+          err.response.data.non_field_errors[0] === "Signature has expired."
+        ) {
+          dispatch(logout());
+          // dispatch(fetchProducts())
+        }
       });
   };
 };
@@ -89,9 +193,16 @@ export const authSignup = (username, email, password1, password2) => {
         password2: password2,
       })
       .then((res) => {
-        console.log("Test");
+        toastr.success("Welcome! Verification mail is sent to you!");
       })
       .catch((err) => {
+        if (
+          err.response.status === 400 &&
+          err.response.data.username[0] ===
+            "A user with that username already exists."
+        ) {
+          toastr.error("A user with that username already exists.");
+        }
         dispatch(authFail(err.response.data.non_field_errors));
       });
   };
@@ -100,41 +211,53 @@ export const authSignup = (username, email, password1, password2) => {
 export const authCheckState = () => {
   return (dispatch) => {
     const token = localStorage.getItem("token");
-    if (token === undefined) {
+    // console.log(token);
+    if (token === undefined || token === null) {
       dispatch(logout());
-    } else {
-      const expirationDate = new Date(localStorage.getItem("expirationDate"));
-      if (expirationDate <= new Date()) {
-        dispatch(logout());
-      } else {
-        dispatch(authSuccess(token));
-        dispatch(
-          checkAuthTimeout(
-            (expirationDate.getTime() - new Date().getTime()) / 1000
-          )
-        );
-      }
-    }
+    } else dispatch(authSuccess(token));
+    // const expirationDate = new Date(localStorage.getItem("expirationDate"));
+    // const refreshExpirationDate = new Date(
+    //   localStorage.getItem("refreshExpirationDate")
+    // );
+    // if (expirationDate <= new Date()) {
+    //   dispatch(logout());
+    // } else {
+    //   dispatch(authSuccess(token));
+    // dispatch(
+    //   checkAuthTimeout(expirationDate.getTime() - new Date().getTime())
+    // );
   };
 };
 
-export const authRefresh = () => {
-  return (dispatch) => {
-    dispatch(authStartRefresh());
-    axios
-      .post(`${localhost}/token/refresh/`, {
-        refresh: localStorage.getItem("refresh_token"),
-      })
-      .then((res) => {
-        const token = res.data.access_token;
-        localStorage.setItem("token", token);
-        // localStorage.removeItem("token");
+// export const authRefresh = () => {
+//   return (dispatch) => {
+//     dispatch(authStartRefresh());
+//     axios
+//       .post(`${localhost}/token/refresh/`, {
+//         refresh: localStorage.getItem("refresh_token"),
+//       })
+//       .then((res) => {
+//         const token = res.data.access_token;
+//         localStorage.setItem("token", token);
+//         // localStorage.removeItem("token");
 
-        dispatch(authSuccess(token));
-        // dispatch(checkAuthTimeout(3600));
-      })
-      .catch((err) => {
-        dispatch(authFail(err));
-      });
+//         dispatch(authSuccess(token));
+//         // dispatch(checkAuthTimeout(3600));
+//       })
+//       .catch((err) => {
+//         dispatch(authFail(err));
+//       });
+//   };
+// };
+
+export default class authService {
+  init = () => {
+    this.setInterceptors();
+    console.log("test");
   };
-};
+
+  setInterceptors = () => {
+    axios.defaults.headers.common["Token"] = localStorage.getItem("jwtToken");
+    axios.defaults.headers.common["Device"] = "device";
+  };
+}

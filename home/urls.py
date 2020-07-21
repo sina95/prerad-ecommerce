@@ -6,7 +6,7 @@ from django.conf.urls import url
 
 from django.views.generic import TemplateView
 from rest_framework_simplejwt import views as jwt_views
-from . import views
+from .views import LoginCustomView, send_email
 from dj_rest_auth.registration.views import VerifyEmailView
 from dj_rest_auth.views import PasswordResetView, PasswordResetConfirmView
 from allauth.account.views import confirm_email
@@ -21,7 +21,8 @@ schema_view = get_swagger_view(title="Prerad API")
 
 
 urlpatterns = [
-    # path('api-auth/', include('rest_framework.urls')),
+    path('dj-rest-auth/login/', LoginCustomView.as_view(), name='rest_login'),
+    path('api-auth/', include('rest_framework.urls')),
     url(r"^dj-rest-auth/registration/account-confirm-email/(?P<key>[\s\d\w().+-_',:&]+)/$", confirm_email,
         name="account_confirm_email"),  # name='account_email_verification_sent'),
     url(r"^dj-rest-auth/registration/account-confirm-email/", VerifyEmailView.as_view(),
@@ -44,7 +45,7 @@ urlpatterns = [
 
     path('back-office/', admin.site.urls),
     path('api/', include('core.api.urls')),
-    path('send-email/', views.send_email),
+    path('send-email/', send_email),
     # path('token/', jwt_views.TokenObtainPairView.as_view(),
     #      name='token_obtain_pair'),
     # path('token/refresh/', jwt_views.TokenRefreshView.as_view(), name='token_refresh'),

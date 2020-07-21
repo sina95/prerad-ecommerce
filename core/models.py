@@ -68,7 +68,8 @@ class UserProfile(models.Model):
 
 class Make(models.Model):
     make = models.CharField(max_length=100, unique=True)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     def __str__(self):
         return self.make
@@ -77,22 +78,24 @@ class Make(models.Model):
 class Model(models.Model):
     model = models.CharField(max_length=100, unique=True)
     make = models.ForeignKey(Make, on_delete=models.PROTECT)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     def __str__(self):
         return f'{self.make.make} - {self.model}'
 
 
 class ModelYear(models.Model):
-#     # make = models.ForeignKey(
-#     #     Make, on_delete=models.CASCADE)
+    #     # make = models.ForeignKey(
+    #     #     Make, on_delete=models.CASCADE)
     model = models.ForeignKey(
         Model, on_delete=models.PROTECT)
     year = models.PositiveIntegerField(validators=[
         MinValueValidator(1984), max_value_current_year], default=current_year())
 #     # image = models.ForeignKey(ModelImage, on_delete=models.PROTECT)
 #     # image = models.ImageField(upload_to='model_image', blank=True)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 #     # year_from = models.PositiveIntegerField(default=current_year(), validators=[
 #     #     MinValueValidator(1984), max_value_current_year])
 #     # year_to = models.PositiveIntegerField(default=current_year(), validators=[
@@ -115,7 +118,8 @@ class ModelImage(models.Model):
     image = models.ImageField(upload_to='model_images')
     model_year = models.ManyToManyField(ModelYear)
     # year = models.ForeignKey(ModelYear, on_delete=models.PROTECT)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     def __str__(self):
         return f'{self.model_year.model.make.make} {self.model_year.model.model} {self.model_year.year}'
@@ -130,7 +134,8 @@ class ModelImage(models.Model):
 
 class PartType(models.Model):
     part_type = models.CharField(max_length=100, unique=True)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     def __str__(self):
         return self.part_type
@@ -139,7 +144,8 @@ class PartType(models.Model):
 class PartCategory(models.Model):
     category = models.CharField(max_length=100, unique=True)
     part_type = models.ForeignKey(PartType, on_delete=models.PROTECT)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     class Meta:
         verbose_name_plural = 'Category'
@@ -150,26 +156,28 @@ class PartCategory(models.Model):
 
 
 class Part(models.Model):
-    part = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100, unique=True)
     part_category = models.ForeignKey(PartCategory, on_delete=models.PROTECT)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     def __str__(self):
-        return self.part
+        return self.name
 
 
 class Item(models.Model):
     # main_category = models.CharField(choices=CATEGORY_CHOICES,
     #                          max_length=1, verbose_name='Motorbike or part', default='P')
 
-    part = models.ForeignKey(Part, on_delete=models.PROTECT)
+    name = models.ForeignKey(Part, on_delete=models.PROTECT)
     price = models.FloatField()
     discount_price = models.FloatField(blank=True, null=True)
+    current_quantity = models.PositiveSmallIntegerField(default=1)
     # category = models.ManyToManyField(
     #     Category, related_name='items')
     # model = models.ManyToManyField(Model)
     # brand = models.ManyToManyField(Brand)
-    model_year = models.ManyToManyField(ModelYear, related_name = 'items')
+    model_year = models.ManyToManyField(ModelYear, related_name='items')
     label = models.CharField(choices=LABEL_CHOICES,
                              max_length=1, verbose_name='New or other tag')
     slug = models.SlugField()
@@ -179,10 +187,11 @@ class Item(models.Model):
     part_rating = models.PositiveSmallIntegerField(
         choices=PART_RATING_CHOICES)
     published = models.BooleanField(default=False)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     def __str__(self):
-        return self.state
+        return f'{self.name.name} id:{self.id}'
 
     def get_absolute_url(self):
         return reverse("core:product", kwargs={
@@ -213,14 +222,14 @@ class Item(models.Model):
     #     ordering = ["-timestamp"]
 
 
-
-
 class Image(models.Model):
     image = models.ImageField(upload_to='item_images')
-    item = models.ForeignKey(Item, on_delete=models.PROTECT, related_name='item_images')
+    item = models.ForeignKey(
+        Item, on_delete=models.PROTECT, related_name='item_images')
     priority = models.PositiveSmallIntegerField(
         default=1)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     def admin_photo(self):
         return mark_safe('<img src="{}" width="100" />'.format(self.image.url))
@@ -233,13 +242,14 @@ class Image(models.Model):
     #     super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.item.part.part
+        return self.item.name.name
 
 
 class Variation(models.Model):
     item = models.ForeignKey(Item, on_delete=models.PROTECT)
     name = models.CharField(max_length=50)  # size
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     class Meta:
         unique_together = (
@@ -254,7 +264,8 @@ class ItemVariation(models.Model):
     variation = models.ForeignKey(Variation, on_delete=models.PROTECT)
     value = models.CharField(max_length=50)  # S, M, L
     attachment = models.ImageField(blank=True)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     class Meta:
         unique_together = (
@@ -264,8 +275,9 @@ class ItemVariation(models.Model):
     def __str__(self):
         return self.value
 
+
 class VehicleForSale(models.Model):
-    model_year = models.ForeignKey(ModelYear, on_delete=models.PROTECT) 
+    model_year = models.ForeignKey(ModelYear, on_delete=models.PROTECT)
     price = models.FloatField()
     discount_price = models.FloatField(blank=True, null=True)
     # category = models.ManyToManyField(
@@ -278,22 +290,23 @@ class VehicleForSale(models.Model):
     description = models.TextField()
     info = models.TextField()
     published = models.BooleanField(default=False)
-    timestamp = models.DateTimeField(auto_now_add=True, auto_now=False, blank=True)
-
+    timestamp = models.DateTimeField(
+        auto_now_add=True, auto_now=False, blank=True)
 
     def __str__(self):
         return self.model_year.model.model
 
+
 class OrderItem(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE)
+                             on_delete=models.PROTECT)
     ordered = models.BooleanField(default=False)
-    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    item = models.ForeignKey(Item, on_delete=models.PROTECT)
     item_variations = models.ManyToManyField(ItemVariation)
     quantity = models.IntegerField(default=1)
 
     def __str__(self):
-        return f"{self.quantity} of {self.item.title}"
+        return f"{self.quantity} of {self.item.part.name}"
 
     def get_total_item_price(self):
         return self.quantity * self.item.price
@@ -312,20 +325,20 @@ class OrderItem(models.Model):
 
 class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE)
+                             on_delete=models.PROTECT)
     ref_code = models.CharField(max_length=20, blank=True, null=True)
     items = models.ManyToManyField(OrderItem)
     start_date = models.DateTimeField(auto_now_add=True)
     ordered_date = models.DateTimeField()
     ordered = models.BooleanField(default=False)
     shipping_address = models.ForeignKey(
-        'Address', related_name='shipping_address', on_delete=models.SET_NULL, blank=True, null=True)
+        'Address', related_name='shipping_address', on_delete=models.PROTECT, blank=True, null=True)
     billing_address = models.ForeignKey(
-        'Address', related_name='billing_address', on_delete=models.SET_NULL, blank=True, null=True)
+        'Address', related_name='billing_address', on_delete=models.PROTECT, blank=True, null=True)
     payment = models.ForeignKey(
-        'Payment', on_delete=models.SET_NULL, blank=True, null=True)
+        'Payment', on_delete=models.PROTECT, blank=True, null=True)
     coupon = models.ForeignKey(
-        'Coupon', on_delete=models.SET_NULL, blank=True, null=True)
+        'Coupon', on_delete=models.PROTECT, blank=True, null=True)
     being_delivered = models.BooleanField(default=False)
     received = models.BooleanField(default=False)
     refund_requested = models.BooleanField(default=False)
@@ -356,7 +369,7 @@ class Order(models.Model):
 
 class Address(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE)
+                             on_delete=models.PROTECT)
     street_address = models.CharField(max_length=100)
     apartment_address = models.CharField(max_length=100)
     country = CountryField(multiple=False)
@@ -372,7 +385,7 @@ class Address(models.Model):
 
 
 class Payment(models.Model):
-    stripe_charge_id = models.CharField(max_length=50)
+    charge_id = models.CharField(max_length=50)
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.SET_NULL, blank=True, null=True)
     amount = models.FloatField()
@@ -391,7 +404,7 @@ class Coupon(models.Model):
 
 
 class Refund(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.PROTECT)
     reason = models.TextField()
     accepted = models.BooleanField(default=False)
     email = models.EmailField()

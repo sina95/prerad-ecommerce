@@ -21,7 +21,10 @@ from .views import (
     PartFilterView,
     PartsFiltersView,
     ItemImageView,
-    ItemFilterView
+    ItemFilterView,
+    AddToCartSessionView,
+    CheckIfQuantityExistView,
+    PayForOrderView
 )
 
 
@@ -49,11 +52,17 @@ urlpatterns = [
     path('payments/', PaymentListView.as_view(), name='payment-list'),
     path('part-filters/', PartView.as_view(), name='part-filter-list'),
     path('part-type-filter/', PartTypeFilterView.as_view(), name='part-type-filter'),
-    path('part-category-filter/', PartCategoryFilterView.as_view(), name='part-category-filter'),
+    path('part-category-filter/', PartCategoryFilterView.as_view(),
+         name='part-category-filter'),
     path('part-filter/', PartFilterView.as_view(), name='part-filter'),
     path('parts-filter/', PartsFiltersView.as_view(), name='parts-filter'),
     path('image/', ItemImageView.as_view(), name='image'),
     path('item-filter-list/', ItemFilterView.as_view(), name='item-filter-list'),
-
+    path('add-to-cart-session/', AddToCartSessionView.as_view(),
+         name='add-to-cart-session'),
+    path('check-if-quantity-exist/', CheckIfQuantityExistView.as_view(),
+         name='check-if-quantity-exist'),
+    path('pay-for-order/', PayForOrderView.as_view(),
+         name='pay-for-order'),
 
 ]
