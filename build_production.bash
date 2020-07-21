@@ -1,4 +1,5 @@
 # 1. Build the frontend
+npm i
 npm run build
 
 # 2. Move files at the build root inside a root subdirectory

@@ -1,4 +1,6 @@
-export const localhost = "http://127.0.0.1:8000";
+// export const localhost = "http://127.0.0.1:8000";
+
+export const localhost = "https://prerad.tk";
 
 const apiURL = "/api";
 
