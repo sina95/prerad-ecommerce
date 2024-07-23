@@ -1,7 +1,8 @@
 # Django React Prerad Ecommerce
 
-<!-- [![alt text](https://github.com/justdjango/django-react-ecommerce/blob/master/thumbnail.png "Logo")](https://youtu.be/RG_Y7lIDXPM) -->
+Ecommerce webshop for Prerad motorparts, Django backend and CMS. React frontend. Stripe payment processor.
 
+Installation instructions:
 ## Backend development workflow
 
 ```json
